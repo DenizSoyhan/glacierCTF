@@ -1,0 +1,32 @@
+#!/bin/sh
+
+echo "[+] Welcome to the typstastic v0.12.0 typst PDF builder CI"
+echo "[+] Give us your typst document and we'll compile it for you!"
+echo "[+] We definitely don't have a flag in /flag.txt"
+
+echo ""
+
+echo "[+] Submit the base64 (EOF with a '@') of a .tar.gz file containing your "
+echo "    document (main.typ) in the root folder"
+echo "[+] Example: tar cz main.typ | base64 ; echo "@""
+echo "[>] --- BASE64 INPUT START ---"
+read -d @ FILE
+echo "[>] --- BASE64 INPUT END ---"
+
+DIR=$(mktemp -d)
+cd ${DIR} &> /dev/null
+echo "${FILE}" | base64 -d 2>/dev/null | tar xz &> /dev/null
+rm -rf main.pdf &> /dev/null
+typst compile --root ${DIR} main.typ &> /dev/null
+
+if [ ! -e main.pdf ]
+then
+  echo "[!] Compilation failed :("
+  exit 1
+else
+  echo "[+] --- BASE64 OUTPUT START ---"
+  tar cz main.pdf 2> /dev/null | base64 
+  echo "[+] --- BASE64 OUTPUT END ---"
+  echo "[+] Example: ... | base64 -d | tar xz > main.pdf"
+  exit 0
+fi
